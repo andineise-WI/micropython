@@ -134,7 +134,6 @@ list(APPEND MICROPY_SOURCE_PORT
     mpthreadport.c
     machine_rtc.c
     machine_sdcard.c
-    machine_twai.c
     modespnow.c
 )
 list(TRANSFORM MICROPY_SOURCE_PORT PREPEND ${MICROPY_PORT_DIR}/)

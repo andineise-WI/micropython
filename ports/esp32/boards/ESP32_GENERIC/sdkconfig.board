@@ -1,0 +1,4 @@
+# ESP32_GENERIC Board Configuration für TWAI/CAN Support
+# Aktiviert TWAI (Two-Wire Automotive Interface) für CAN-Bus
+
+CONFIG_SOC_TWAI_SUPPORTED=y

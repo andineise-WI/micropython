@@ -27,6 +27,7 @@
 #include "py/runtime.h"
 #include "py/mphal.h"
 #include "py/mperrno.h"
+#include "extmod/machine_mem.h"
 #include "modmachine.h"
 #include "machine_twai.h"
 #include "mphalport.h"
@@ -110,60 +111,18 @@ static machine_twai_obj_t machine_twai_obj = {
 
 // Helper function to convert baudrate to timing config
 static esp_err_t twai_get_timing_config(uint32_t baudrate, twai_timing_config_t *timing_config) {
-    // Manual timing configuration for ESP-IDF v5.1.2
     switch (baudrate) {
-        case 25000:
-            timing_config->brp = 128;
-            timing_config->tseg_1 = 16;
-            timing_config->tseg_2 = 8;
-            timing_config->sjw = 3;
-            break;
-        case 50000:
-            timing_config->brp = 80;
-            timing_config->tseg_1 = 15;
-            timing_config->tseg_2 = 4;
-            timing_config->sjw = 3;
-            break;
-        case 100000:
-            timing_config->brp = 40;
-            timing_config->tseg_1 = 15;
-            timing_config->tseg_2 = 4;
-            timing_config->sjw = 3;
-            break;
-        case 125000:
-            timing_config->brp = 32;
-            timing_config->tseg_1 = 15;
-            timing_config->tseg_2 = 4;
-            timing_config->sjw = 3;
-            break;
-        case 250000:
-            timing_config->brp = 16;
-            timing_config->tseg_1 = 15;
-            timing_config->tseg_2 = 4;
-            timing_config->sjw = 3;
-            break;
-        case 500000:
-            timing_config->brp = 8;
-            timing_config->tseg_1 = 15;
-            timing_config->tseg_2 = 4;
-            timing_config->sjw = 3;
-            break;
-        case 800000:
-            timing_config->brp = 5;
-            timing_config->tseg_1 = 15;
-            timing_config->tseg_2 = 4;
-            timing_config->sjw = 3;
-            break;
-        case 1000000:
-            timing_config->brp = 4;
-            timing_config->tseg_1 = 15;
-            timing_config->tseg_2 = 4;
-            timing_config->sjw = 3;
-            break;
+        case 25000:   *timing_config = TWAI_TIMING_CONFIG_25KBITS(); break;
+        case 50000:   *timing_config = TWAI_TIMING_CONFIG_50KBITS(); break;
+        case 100000:  *timing_config = TWAI_TIMING_CONFIG_100KBITS(); break;
+        case 125000:  *timing_config = TWAI_TIMING_CONFIG_125KBITS(); break;
+        case 250000:  *timing_config = TWAI_TIMING_CONFIG_250KBITS(); break;
+        case 500000:  *timing_config = TWAI_TIMING_CONFIG_500KBITS(); break;
+        case 800000:  *timing_config = TWAI_TIMING_CONFIG_800KBITS(); break;
+        case 1000000: *timing_config = TWAI_TIMING_CONFIG_1MBITS(); break;
         default:
             return ESP_ERR_INVALID_ARG;
     }
-    timing_config->triple_sampling = false;
     return ESP_OK;
 }
 
@@ -226,9 +185,7 @@ static mp_obj_t machine_twai_init(size_t n_args, const mp_obj_t *pos_args, mp_ma
     };
     
     // Filter configuration (accept all messages by default)
-    self->filter_config.acceptance_code = 0;
-    self->filter_config.acceptance_mask = 0xFFFFFFFF;
-    self->filter_config.single_filter = true;
+    self->filter_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
     
     // Install TWAI driver
     ret = twai_driver_install(&self->general_config, &self->timing_config, &self->filter_config);

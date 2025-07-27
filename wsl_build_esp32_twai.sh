@@ -90,6 +90,12 @@ if [ -d "$WINDOWS_MP" ]; then
         echo "✅ Makefile kopiert (machine_twai.c eingebunden)"
     fi
     
+    # CMake-Konfiguration kopieren (wichtig für machine_twai.c)
+    if [ -f "$WINDOWS_MP/ports/esp32/esp32_common.cmake" ]; then
+        cp "$WINDOWS_MP/ports/esp32/esp32_common.cmake" ports/esp32/
+        echo "✅ esp32_common.cmake kopiert (machine_twai.c in Build eingebunden)"
+    fi
+    
     # Beispiele und Dokumentation kopieren
     if [ -d "$WINDOWS_MP/examples/esp32" ]; then
         mkdir -p examples
