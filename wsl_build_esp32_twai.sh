@@ -6,6 +6,8 @@ set -e  # Bei Fehlern stoppen
 
 echo "================================================="
 echo "ESP32 TWAI/CAN MicroPython Build in WSL"
+echo "Mit TCAN332 Transceiver (Texas Instruments)"
+echo "GPIO4 (TX) und GPIO5 (RX)"
 echo "================================================="
 echo
 
@@ -52,22 +54,22 @@ else
 fi
 
 # Schritt 6: TWAI-Implementation kopieren
-echo "🚗 TWAI-Implementation von Windows kopieren..."
-echo "Kopiere machine_twai.c und machine_twai.h..."
+echo "🚗 TWAI-Implementation mit TCAN332-Support von Windows kopieren..."
+echo "Kopiere machine_twai.c und machine_twai.h (ESP-IDF v5.x+ kompatibel)..."
 
 # Prüfen ob Windows-Dateien verfügbar sind
 WINDOWS_MP="/mnt/c/Users/admin/git/micropython-1"
 if [ -d "$WINDOWS_MP" ]; then
     echo "Windows MicroPython gefunden: $WINDOWS_MP"
     
-    # TWAI-Hauptdateien kopieren
-    if [ -f "$WINDOWS_MP/extmod/machine_twai.c" ]; then
-        cp "$WINDOWS_MP/extmod/machine_twai.c" extmod/
-        echo "✅ machine_twai.c kopiert"
+    # TWAI-Hauptdateien kopieren (neue Pfade in ports/esp32)
+    if [ -f "$WINDOWS_MP/ports/esp32/machine_twai.c" ]; then
+        cp "$WINDOWS_MP/ports/esp32/machine_twai.c" ports/esp32/
+        echo "✅ machine_twai.c kopiert (mit TCAN332 GPIO4/5)"
     fi
     
-    if [ -f "$WINDOWS_MP/extmod/machine_twai.h" ]; then
-        cp "$WINDOWS_MP/extmod/machine_twai.h" extmod/
+    if [ -f "$WINDOWS_MP/ports/esp32/machine_twai.h" ]; then
+        cp "$WINDOWS_MP/ports/esp32/machine_twai.h" ports/esp32/
         echo "✅ machine_twai.h kopiert"
     fi
     
@@ -79,24 +81,34 @@ if [ -d "$WINDOWS_MP" ]; then
     
     if [ -f "$WINDOWS_MP/ports/esp32/mpconfigport.h" ]; then
         cp "$WINDOWS_MP/ports/esp32/mpconfigport.h" ports/esp32/
-        echo "✅ mpconfigport.h kopiert"
+        echo "✅ mpconfigport.h kopiert (TWAI aktiviert)"
     fi
     
-    if [ -f "$WINDOWS_MP/extmod/extmod.mk" ]; then
-        cp "$WINDOWS_MP/extmod/extmod.mk" extmod/
-        echo "✅ extmod.mk kopiert"
+    # Makefile kopieren
+    if [ -f "$WINDOWS_MP/ports/esp32/Makefile" ]; then
+        cp "$WINDOWS_MP/ports/esp32/Makefile" ports/esp32/
+        echo "✅ Makefile kopiert (machine_twai.c eingebunden)"
     fi
     
-    # Board-Konfiguration kopieren
-    if [ -d "$WINDOWS_MP/ports/esp32/boards/ESP32_GENERIC_8MB_2MB" ]; then
-        cp -r "$WINDOWS_MP/ports/esp32/boards/ESP32_GENERIC_8MB_2MB" ports/esp32/boards/
-        echo "✅ ESP32_GENERIC_8MB_2MB Board-Konfiguration kopiert"
+    # Beispiele und Dokumentation kopieren
+    if [ -d "$WINDOWS_MP/examples/esp32" ]; then
+        mkdir -p examples
+        cp -r "$WINDOWS_MP/examples/esp32" examples/
+        echo "✅ TCAN332-Beispiele kopiert"
     fi
     
-    echo "✅ Alle TWAI-Dateien erfolgreich kopiert"
+    if [ -d "$WINDOWS_MP/docs/esp32" ]; then
+        mkdir -p docs
+        cp -r "$WINDOWS_MP/docs/esp32" docs/
+        echo "✅ TCAN332-Dokumentation kopiert"
+    fi
+    
+    echo "✅ Alle TWAI-Dateien mit TCAN332-Support erfolgreich kopiert"
 else
-    echo "⚠️  Windows MicroPython nicht gefunden. Manuell TWAI-Dateien erstellen..."
-    # Hier würden wir die TWAI-Dateien neu erstellen
+    echo "⚠️  Windows MicroPython nicht gefunden. Git Repository verwenden..."
+    echo "ℹ️  Code bereits ins Git gepusht - Update durchführen..."
+    git pull origin master
+    echo "✅ TWAI-Code aus Git Repository aktualisiert"
 fi
 
 # Schritt 7: ESP32 kompilieren
@@ -107,7 +119,8 @@ cd ~/micropython/ports/esp32
 . ~/esp/esp-idf/export.sh
 
 echo "Board: ESP32_GENERIC mit SPIRAM"
-echo "TWAI-Support: Aktiviert"
+echo "TWAI-Support: Aktiviert mit TCAN332 (GPIO4/5)"
+echo "ESP-IDF: v5.x+ API kompatibel"
 echo
 
 # Build ausführen
@@ -140,13 +153,15 @@ if [ $? -eq 0 ]; then
     echo "  idf.py -D MICROPY_BOARD=ESP32_GENERIC -D MICROPY_BOARD_VARIANT=SPIRAM -p /dev/ttyS3 flash"
     echo "  idf.py -p /dev/ttyS3 monitor"
     echo
-    echo "🧪 TWAI/CAN Test:"
+    echo "🧪 TWAI/CAN Test mit TCAN332:"
     echo "  from machine import TWAI"
-    echo "  can = TWAI(tx=21, rx=22, baudrate=500000)"
+    echo "  can = TWAI(tx=4, rx=5, baudrate=500000)  # TCAN332 GPIO4/5"
     echo "  can.init()"
-    echo "  print('TWAI ready!')"
+    echo "  print('TCAN332 ready!')"
+    echo "  can.send(b'\\x01\\x02\\x03\\x04', id=0x123)"
     echo
-    echo "🎯 Ihr ESP32 (8MB Flash + 2MB PSRAM) mit TWAI/CAN ist bereit!"
+    echo "🎯 Ihr ESP32 mit TCAN332 (Texas Instruments) ist bereit!"
+    echo "📖 Siehe: docs/esp32/README_TCAN332.md für Details"
     
 else
     echo

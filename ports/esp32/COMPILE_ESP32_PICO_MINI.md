@@ -92,26 +92,27 @@ idf.py -p COM3 monitor
 - **TWAI/CAN**: Unterstützt (GPIO 21/22 standardmäßig)
 - **Package**: 7x7mm LGA
 
-## TWAI/CAN Pins für ESP32-PICO-MINI-02-N8R2
+## TWAI/CAN Pins für ESP32-PICO-MINI-02-N8R2 mit TCAN332
 
-- **TX (CTX)**: GPIO 21 (Standard)
-- **RX (CRX)**: GPIO 22 (Standard)
+- **TX (CTX)**: GPIO 4 (TCAN332 TXD)
+- **RX (CRX)**: GPIO 5 (TCAN332 RXD)
 
 ## Beispiel-Nutzung nach dem Flashen
 
 ```python
 from machine import TWAI
 
-# TWAI für ESP32-PICO-MINI-02-N8R2 initialisieren
-can = TWAI(tx=21, rx=22, baudrate=500000, mode=TWAI.NORMAL)
+# TWAI für ESP32-PICO-MINI-02-N8R2 mit TCAN332 initialisieren
+can = TWAI(tx=4, rx=5, baudrate=500000, mode=0)  # mode 0 = NORMAL
 can.init()
 
 # CAN-Nachricht senden
-can.send(b"Hello from PICO!", 0x123)
+can.send(b"Hello TCAN332!", id=0x123, timeout=1000)
 
 # CAN-Nachricht empfangen
-data, msg_id, extframe, rtr = can.recv(timeout=1000)
-print(f"Received: {data} from ID: 0x{msg_id:03X}")
+if can.any():
+    data, msg_id, extframe, rtr = can.recv(timeout=1000)
+    print(f"Received: {data} from ID: 0x{msg_id:03X}")
 
 can.deinit()
 ```
@@ -151,16 +152,37 @@ Nach erfolgreicher Kompilierung finden Sie die Firmware in:
 - `build/bootloader/bootloader.bin` - Bootloader
 - `build/partition_table/partition-table.bin` - Partitionstabelle
 
-## Automatische Kompilierung
+## Automatische Kompilierung mit Build-Scripts
 
-Verwenden Sie die bereitgestellten Build-Skripte:
+Es gibt fertige Build-Scripts für die automatische Kompilierung:
 
-### Windows:
+### Option 1: PowerShell (empfohlen)
+```powershell
+# Zum Projekt-Verzeichnis navigieren
+cd C:\Users\admin\git\micropython-1
+
+# Einfaches PowerShell-Script (robust)
+PowerShell -ExecutionPolicy Bypass -File build_esp32_simple.ps1
+
+# Oder erweiterte Version
+PowerShell -ExecutionPolicy Bypass -File build_esp32_twai.ps1
+```
+
+### Option 2: Batch-Datei
 ```cmd
-.\build_twai.bat ESP32_GENERIC
+cd C:\Users\admin\git\micropython-1
+build_esp32_twai.bat
 ```
 
-### Linux/macOS:
+### Option 3: Direkt in WSL
 ```bash
-./build_twai.sh ESP32_GENERIC
+wsl
+cd /mnt/c/Users/admin/git/micropython-1
+chmod +x wsl_build_esp32_twai.sh
+./wsl_build_esp32_twai.sh
 ```
+
+Die Scripts installieren automatisch:
+- ESP-IDF v5.1.2
+- Alle Build-Dependencies
+- Kompilieren ESP32-Firmware mit TCAN332-Support (GPIO4/5)

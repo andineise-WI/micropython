@@ -38,6 +38,7 @@
 
 #include "modmachine.h"
 #include "machine_rtc.h"
+#include "machine_twai.h"
 
 #if MICROPY_HW_ENABLE_SDCARD
 #define MICROPY_PY_MACHINE_SDCARD_ENTRY { MP_ROM_QSTR(MP_QSTR_SDCard), MP_ROM_PTR(&machine_sdcard_type) },
