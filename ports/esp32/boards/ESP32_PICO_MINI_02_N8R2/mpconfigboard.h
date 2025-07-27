@@ -1,0 +1,15 @@
+#define MICROPY_HW_BOARD_NAME "ESP32-PICO-MINI-02-N8R2"
+#define MICROPY_HW_MCU_NAME "ESP32-PICO-D4"
+
+// Enable SPIRAM
+#define MICROPY_HW_ENABLE_SPIRAM (1)
+
+// Enable SDCARD
+#define MICROPY_HW_ENABLE_SDCARD (1)
+
+// TWAI/CAN pins (default)
+#define MICROPY_HW_TWAI_TX (21)
+#define MICROPY_HW_TWAI_RX (22)
+
+// Flash size: 8MB
+// PSRAM size: 2MB
