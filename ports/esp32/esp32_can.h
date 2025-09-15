@@ -28,8 +28,17 @@
 
 #include "modmachine.h"
 #include "freertos/task.h"
+#include "esp_idf_version.h"
 
 #include "py/obj.h"
+
+// Include TWAI headers for ESP-IDF v4.2+ and v5.x
+#if ((ESP_IDF_VERSION_MAJOR == 4) && (ESP_IDF_VERSION_MINOR >= 2)) || (ESP_IDF_VERSION_MAJOR >= 5)
+#include "driver/twai.h"
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include "hal/twai_types.h"
+#endif
+#endif
 
 #if MICROPY_HW_ENABLE_CAN
 
