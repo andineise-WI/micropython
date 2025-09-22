@@ -33,7 +33,7 @@
 #include "esp_idf_version.h"
 
 // CAN only for ESP-IDF v4.2 and higher because of "driver/twai.h"
-#if (ESP_IDF_VERSION_MAJOR == 4) && (ESP_IDF_VERSION_MINOR >= 2)
+#if (ESP_IDF_VERSION_MAJOR == 4) && (ESP_IDF_VERSION_MINOR >= 2) || (ESP_IDF_VERSION_MAJOR > 4)
 
 #include "driver/twai.h"
 #include "esp_task.h"
@@ -76,13 +76,13 @@ esp32_can_config_t can_config = {
     .initialized = false
 };
 
-STATIC esp32_can_obj_t esp32_can_obj = {
+static esp32_can_obj_t esp32_can_obj = {
     {&esp32_can_type},
     .config = &can_config
 };
 
 // INTERNAL FUNCTION Return status information
-STATIC twai_status_info_t _esp32_hw_can_get_status() {
+static twai_status_info_t _esp32_hw_can_get_status() {
     twai_status_info_t status;
     check_esp_err(twai_get_status_info(&status));
     return status;
@@ -96,7 +96,7 @@ void esp32_reset_can_filter(const esp32_can_obj_t *self) {
     self->config->filter.acceptance_mask = f_config.acceptance_mask;
 }
 
-STATIC void esp32_hw_can_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void esp32_hw_can_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     esp32_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     if (self->config->initialized) {
@@ -125,7 +125,7 @@ STATIC void esp32_hw_can_print(const mp_print_t *print, mp_obj_t self_in, mp_pri
 }
 
 // INTERNAL FUNCTION FreeRTOS IRQ task
-STATIC void esp32_hw_can_irq_task(void *self_in) {
+static void esp32_hw_can_irq_task(void *self_in) {
     esp32_can_obj_t *self = (esp32_can_obj_t *)self_in;
     uint32_t alerts;
 
@@ -177,7 +177,7 @@ STATIC void esp32_hw_can_irq_task(void *self_in) {
 }
 
 // init(mode, tx=5, rx=4, baudrate=500000, prescaler=8, sjw=3, bs1=15, bs2=4, auto_restart=False, tx_queue=1, rx_queue=1)
-STATIC mp_obj_t esp32_hw_can_init_helper(esp32_can_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t esp32_hw_can_init_helper(esp32_can_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_mode, ARG_prescaler, ARG_sjw, ARG_bs1, ARG_bs2, ARG_auto_restart, ARG_baudrate,
            ARG_tx_io, ARG_rx_io, ARG_tx_queue, ARG_rx_queue};
     static const mp_arg_t allowed_args[] = {
@@ -231,10 +231,11 @@ STATIC mp_obj_t esp32_hw_can_init_helper(esp32_can_obj_t *self, size_t n_args, c
     switch ((int)args[ARG_baudrate].u_int) {
         case 0:
             timing = &((twai_timing_config_t) {
+            .clk_src = TWAI_CLK_SRC_DEFAULT,
             .brp = args[ARG_prescaler].u_int,
             .sjw = args[ARG_sjw].u_int,
-            .tseg_1 = args[ARG_bs1].u_int,
-            .tseg_2 = args[ARG_bs2].u_int,
+            .tseg1 = args[ARG_bs1].u_int,
+            .tseg2 = args[ARG_bs2].u_int,
             .triple_sampling = false
         });
             break;
@@ -310,7 +311,7 @@ STATIC mp_obj_t esp32_hw_can_init_helper(esp32_can_obj_t *self, size_t n_args, c
 }
 
 // CAN(bus, ...) No argument to get the object
-STATIC mp_obj_t esp32_hw_can_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t esp32_hw_can_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
     mp_arg_check_num(n_args, n_kw, 1, MP_OBJ_FUN_ARGS_MAX, true);
     if (mp_obj_is_int(args[0]) != true) {
@@ -344,21 +345,21 @@ STATIC mp_obj_t esp32_hw_can_make_new(const mp_obj_type_t *type, size_t n_args, 
 }
 
 // init(tx, rx, baudrate, mode=CAN_MODE_NORMAL, tx_queue=2, rx_queue=5)
-STATIC mp_obj_t esp32_hw_can_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
+static mp_obj_t esp32_hw_can_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
     return esp32_hw_can_init_helper(MP_OBJ_TO_PTR(args[0]), n_args - 1, args + 1, kw_args);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp32_hw_can_init_obj, 1, esp32_hw_can_init);
+static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_hw_can_init_obj, 1, esp32_hw_can_init);
 
 // deinit()
-STATIC mp_obj_t esp32_hw_can_deinit(const mp_obj_t self_in) {
+static mp_obj_t esp32_hw_can_deinit(const mp_obj_t self_in) {
     const esp32_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     can_deinit(self);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_deinit_obj, esp32_hw_can_deinit);
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_deinit_obj, esp32_hw_can_deinit);
 
 // Force a software restart of the controller, to allow transmission after a bus error
-STATIC mp_obj_t esp32_hw_can_restart(mp_obj_t self_in) {
+static mp_obj_t esp32_hw_can_restart(mp_obj_t self_in) {
     esp32_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     twai_status_info_t status = _esp32_hw_can_get_status();
     if (!self->config->initialized || status.state != TWAI_STATE_BUS_OFF) {
@@ -379,10 +380,10 @@ STATIC mp_obj_t esp32_hw_can_restart(mp_obj_t self_in) {
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_restart_obj, esp32_hw_can_restart);
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_restart_obj, esp32_hw_can_restart);
 
 // Get the state of the controller
-STATIC mp_obj_t esp32_hw_can_state(mp_obj_t self_in) {
+static mp_obj_t esp32_hw_can_state(mp_obj_t self_in) {
     esp32_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_int_t state = TWAI_STATE_STOPPED;
     if (self->config->initialized) {
@@ -390,10 +391,10 @@ STATIC mp_obj_t esp32_hw_can_state(mp_obj_t self_in) {
     }
     return mp_obj_new_int(state);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_state_obj, esp32_hw_can_state);
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_state_obj, esp32_hw_can_state);
 
 // info() -- Get info about error states and TX/RX buffers
-STATIC mp_obj_t esp32_hw_can_info(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t esp32_hw_can_info(size_t n_args, const mp_obj_t *args) {
     esp32_can_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     mp_obj_list_t *list;
     if (n_args == 1) {
@@ -417,17 +418,17 @@ STATIC mp_obj_t esp32_hw_can_info(size_t n_args, const mp_obj_t *args) {
     list->items[6] = MP_OBJ_NEW_SMALL_INT(status.msgs_to_rx);
     return MP_OBJ_FROM_PTR(list);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp32_hw_can_info_obj, 1, 2, esp32_hw_can_info);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp32_hw_can_info_obj, 1, 2, esp32_hw_can_info);
 
 // any() - return `True` if any message waiting, else `False`
-STATIC mp_obj_t esp32_hw_can_any(mp_obj_t self_in) {
+static mp_obj_t esp32_hw_can_any(mp_obj_t self_in) {
     twai_status_info_t status = _esp32_hw_can_get_status();
     return mp_obj_new_bool((status.msgs_to_rx) > 0);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_any_obj, esp32_hw_can_any);
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_any_obj, esp32_hw_can_any);
 
 // send([data], id, *, timeout=0, rtr=false, extframe=false)
-STATIC mp_obj_t esp32_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t esp32_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_data, ARG_id, ARG_timeout, ARG_rtr, ARG_extframe };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_data,     MP_ARG_REQUIRED | MP_ARG_OBJ,   {.u_obj = MP_OBJ_NULL} },
@@ -496,10 +497,10 @@ STATIC mp_obj_t esp32_hw_can_send(size_t n_args, const mp_obj_t *pos_args, mp_ma
         mp_raise_msg(&mp_type_RuntimeError, "Device is not ready");
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp32_hw_can_send_obj, 3, esp32_hw_can_send);
+static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_hw_can_send_obj, 3, esp32_hw_can_send);
 
 // recv(list=None, *, timeout=5000)
-STATIC mp_obj_t esp32_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t esp32_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_list, ARG_timeout };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_list,     MP_ARG_OBJ,                     {.u_rom_obj = MP_ROM_NONE} },
@@ -548,16 +549,16 @@ STATIC mp_obj_t esp32_hw_can_recv(size_t n_args, const mp_obj_t *pos_args, mp_ma
     }
 
     items[0] = MP_OBJ_NEW_SMALL_INT(rx_msg.identifier);
-    items[1] = rx_msg.extd ? mp_const_true : mp_const_false;
-    items[2] = rx_msg.rtr ? mp_const_true : mp_const_false;
+    items[1] = (rx_msg.flags & TWAI_MSG_FLAG_EXTD) ? mp_const_true : mp_const_false;
+    items[2] = (rx_msg.flags & TWAI_MSG_FLAG_RTR) ? mp_const_true : mp_const_false;
 
     // Return the result
     return ret_obj;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp32_hw_can_recv_obj, 0, esp32_hw_can_recv);
+static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_hw_can_recv_obj, 0, esp32_hw_can_recv);
 
 // Clear filters setting
-STATIC mp_obj_t esp32_hw_can_clearfilter(mp_obj_t self_in) {
+static mp_obj_t esp32_hw_can_clearfilter(mp_obj_t self_in) {
     esp32_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     // Defaults from TWAI_FILTER_CONFIG_ACCEPT_ALL
@@ -575,14 +576,14 @@ STATIC mp_obj_t esp32_hw_can_clearfilter(mp_obj_t self_in) {
     check_esp_err(twai_start());
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_clearfilter_obj, esp32_hw_can_clearfilter);
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_clearfilter_obj, esp32_hw_can_clearfilter);
 
 // bank: 0 only
 // mode: FILTER_RAW_SINGLE, FILTER_RAW_DUAL or FILTER_ADDR_SINGLE or FILTER_ADDR_DUAL
 // params: [id, mask]
 // rtr: ignored if FILTER_RAW
 // Set CAN HW filter
-STATIC mp_obj_t esp32_hw_can_setfilter(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t esp32_hw_can_setfilter(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_bank, ARG_mode, ARG_params, ARG_rtr, ARG_extframe };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_bank,     MP_ARG_REQUIRED | MP_ARG_INT,   {.u_int = 0} },
@@ -684,10 +685,10 @@ STATIC mp_obj_t esp32_hw_can_setfilter(size_t n_args, const mp_obj_t *pos_args, 
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(esp32_hw_can_setfilter_obj, 1, esp32_hw_can_setfilter);
+static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_hw_can_setfilter_obj, 1, esp32_hw_can_setfilter);
 
 // rxcallback(callable)
-STATIC mp_obj_t esp32_hw_can_rxcallback(mp_obj_t self_in, mp_obj_t callback_in) {
+static mp_obj_t esp32_hw_can_rxcallback(mp_obj_t self_in, mp_obj_t callback_in) {
     esp32_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     if (callback_in == mp_const_none) {
@@ -700,21 +701,21 @@ STATIC mp_obj_t esp32_hw_can_rxcallback(mp_obj_t self_in, mp_obj_t callback_in) 
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(esp32_hw_can_rxcallback_obj, esp32_hw_can_rxcallback);
+static MP_DEFINE_CONST_FUN_OBJ_2(esp32_hw_can_rxcallback_obj, esp32_hw_can_rxcallback);
 
 // Clear TX Queue
-STATIC mp_obj_t esp32_hw_can_clear_tx_queue(mp_obj_t self_in) {
+static mp_obj_t esp32_hw_can_clear_tx_queue(mp_obj_t self_in) {
     return mp_obj_new_bool(twai_clear_transmit_queue() == ESP_OK);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_clear_tx_queue_obj, esp32_hw_can_clear_tx_queue);
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_clear_tx_queue_obj, esp32_hw_can_clear_tx_queue);
 
 // Clear RX Queue
-STATIC mp_obj_t esp32_hw_can_clear_rx_queue(mp_obj_t self_in) {
+static mp_obj_t esp32_hw_can_clear_rx_queue(mp_obj_t self_in) {
     return mp_obj_new_bool(twai_clear_receive_queue() == ESP_OK);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_clear_rx_queue_obj, esp32_hw_can_clear_rx_queue);
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_hw_can_clear_rx_queue_obj, esp32_hw_can_clear_rx_queue);
 
-STATIC const mp_rom_map_elem_t esp32_can_locals_dict_table[] = {
+static const mp_rom_map_elem_t esp32_can_locals_dict_table[] = {
     // CAN_ATTRIBUTES
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_CAN) },
     // Micropython Generic API
@@ -747,7 +748,7 @@ STATIC const mp_rom_map_elem_t esp32_can_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_FILTER_RAW_DUAL), MP_ROM_INT(FILTER_RAW_DUAL) },
     { MP_ROM_QSTR(MP_QSTR_FILTER_ADDRESS), MP_ROM_INT(FILTER_ADDRESS) },
 };
-STATIC MP_DEFINE_CONST_DICT(esp32_can_locals_dict, esp32_can_locals_dict_table);
+static MP_DEFINE_CONST_DICT(esp32_can_locals_dict, esp32_can_locals_dict_table);
 
 // Python object definition
 MP_DEFINE_CONST_OBJ_TYPE(

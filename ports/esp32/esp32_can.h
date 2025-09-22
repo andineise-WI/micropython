@@ -33,9 +33,9 @@
 #include "py/obj.h"
 
 // Include TWAI headers for ESP-IDF v4.2+ and v5.x
-#if ((ESP_IDF_VERSION_MAJOR == 4) && (ESP_IDF_VERSION_MINOR >= 2)) || (ESP_IDF_VERSION_MAJOR >= 5)
+#if ((ESP_IDF_VERSION_MAJOR == 4) && (ESP_IDF_VERSION_MINOR >= 2)) || (ESP_IDF_VERSION_MAJOR > 4)
 #include "driver/twai.h"
-#if ESP_IDF_VERSION_MAJOR >= 5
+#if ESP_IDF_VERSION_MAJOR > 4
 #include "hal/twai_types.h"
 #endif
 #endif
